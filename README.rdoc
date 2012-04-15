@@ -1,0 +1,210 @@
+= XML Active
+
+Rails has some really fantastic features for serialisation of ActiveRecord to XML however going back the other way is not so fantastic.  XML Active aims to provide the import of XML into your database while utilising the strengths of ActiveRecord. It extends ActiveRecord allowing it to seamlessly work in with your model.  Here are the features provided by XML Active:
+
+* Updating of records based on an XML document containing elements matching primary key
+* Creation of records based on elements in an XML
+* Removal of records based on an XML document containing elements matching primary key
+* Choose to only update, only create or only remove records
+* Choose to combine update, create and remove actions
+* Synchronise your database with an XML Document
+
+== The Background
+
+== XML Documents
+
+XML Active relies on the XML documents created by ActiveRecord in that it utilises the element attributes and document layout.  Following is a sample of an XML document. Note the @type@ attribute which helps to identify elements that are integers, arrays, etc.
+
+    <books type="array">
+      <book>
+        <id type="Integer">4</id>
+        <name>Book 1</name>
+      </book>
+      <book>
+        <id type="integer">5</id>
+        <name>Book 1</name>
+        <chapters type="array">
+          <chapter>
+            <id type="integer">1</id>
+            <title>Chapter 1</title>
+            <introduction>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</introduction>
+            <pages type="array">
+              <page>
+                <id type="integer">1</id>
+                <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+                <number>1</number>
+              </page>
+              <page>
+                <id type="integer">2</id>
+                <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+                <number>2</number>
+              </page>
+              <page>
+                <id type="integer">3</id>
+                <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+                <number>3</number>
+              </page>
+            </pages>
+          </chapter>
+          <chapter>
+            <id type="integer">2</id>
+            <title>Chapter 2</title>
+            <introduction>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</introduction>
+            <pages type="array">
+              <page>
+                <id type="integer">5</id>
+                <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+                <number>1</number>
+              </page>
+              <page>
+                <id type="integer">6</id>
+                <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+                <number>2</number>
+              </page>
+              <page>
+                <id type="integer">7</id>
+                <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+                <number>3</number>
+              </page>
+              <page>
+                <id type="integer">8</id>
+                <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+                <number>4</number>
+              </page>
+            </pages>
+          </chapter>
+        </chapters>
+      </book>
+      <book>
+        <id type="integer">6</id>
+        <name>Book 1</name>
+      </book>
+    </books>
+    </code>
+
+=== Database Schema
+
+XML Active will detect the primary key of the tables in your schema even if is a name other than <b>id</b>.  It will use the primary key to match records for update or deletion or creation when they don't exist.  Given this it's very important that the tables that you wish to synchronise have a primary key with auto increment.  The good news is by default Rails will create a primary key field called <b>id</b> that is auto-increment.  At this time XML Active doesn't support compound primary keys.
+
+=== The Model
+
+In order to identify the relationships XML Active it relies on associations so you have to make sure you define your associations in your model.  Following are is a sample model.
+
+book.rb
+    class Book < ActiveRecord::Base
+      has_many :chapters, :dependent => :destroy
+    end
+
+chapter.rb
+    class Chapter < ActiveRecord::Base
+      has_many :pages, :dependent => :destroy
+      belongs_to :book
+    end
+
+page.rb
+    class Page < ActiveRecord::Base
+      belongs_to :chapter
+    end
+
+At this stage XML Active has been tested with a limited number of associations.  It is hoped in the future that a more complete set of tests will exist.
+
+== Examples
+
+Now to the meaty part, the examples.  XML Active currenly uses "Nokogiri"(http://nokogiri.org/) to do its XML parsing so you can provide either a <b>Nokogiri::XML::Element</b> or raw XML.
+
+=== New Functions
+
+XML Active extends the ActiveRecord class giving you the following functions:
+
+many_from_xml(xml, options)
+Allows for the import of many records based on an XML document. This function expects an XML document similar to the following with many records in it:
+
+books_changed.xml
+    <books type="array">
+      <book>
+        <id type="Integer">4</id>
+        <name>Book 1</name>
+      </book>
+      <book>
+        <id type="integer">5</id>
+        <name>Book 1</name>
+      </book>
+      <book>
+        <id type="integer">6</id>
+        <name>Book 1</name>
+      </book>
+    </books>
+
+Following is an example:
+    Book.many_from_xml File.open("books_changed.xml").read, [:update]
+
+one_from_xml(xml, options)
+Allows for the import of one record based on an XML document. This function expects an XML document similar to the following with many records in it:
+
+one_book_changed.xml
+    <book>
+      <id type="Integer">4</id>
+      <name>Book 1</name>
+    </book>
+
+Following is an example:
+    Book.one_from_xml File.open("one_book_changed.xml").read, [:update]
+
+=== Options
+
+You can combine any of the options (:create, :update or :destroy) and XML Active will only perform the actions provided in the options.  However if you use the :sync option then all other options are ignored.  Following are the current options:
+
+* <b>:update</b> records in the database that match those in the provided XML document based on classes in the model, associations and the primary key.
+
+* <b>:create</b> records in the database that exist in the provided XML document but not in the database. Matching is based on classes in the model, associations and the primary key.
+
+* <b>:destroy</b> records in the database that don't exist in the provided XML document. Matching is based on classes in the model, associations and the primary key.  This respects validation by using the ActiveRecord destroy rather than delete.
+
+* <b>:sync</b> is really the combination of :create, :update and :destroy. Using this option will cause XML Active to ignore :create, :update and :destroy options and will proceed to make your database records match those in the XML document.
+
+=== One to One Associations
+XML Active supports has_one association with all options and following arr the behaviours of XML Active with each option:
+
+<b>:update</b>
+
+* <i>Record exists in XML but not in DB</i>: No Action
+* <i>Record exists in DB but not in XML</i>: No Action
+* <i>Record exists in XML and in DB</i>: DB record is updated if identifying features (eg id) match
+
+<b>:create</b>
+
+* <i>Record exists in XML but not in DB</i>: A new record in the DB is created
+* <i>Record exists in DB but not in XML</i>: No Action
+* <i>Record exists in XML and in DB</i>: No Action
+
+<b>:destroy</b>
+
+* <i>Record exists in XML but not in DB</i>: No Action
+* <i>Record exists in DB but not in XML</i>: The DB Record is Destroyed
+* <i>Record exists in XML and in DB</i>: DB record is destroyed if identifying features (eg id) don't match
+
+<b>:sync</b>
+
+* <i>Record exists in XML but not in DB</i>: A new record in the DB is created
+* <i>Record exists in DB but not in XML</i>: The DB Record is Destroyed
+* <i>Record exists in XML and in DB</i>: DB record is replaced if identifying features (eg id) don't match but if they do then the DB record is updated
+
+=== Versions
+
+* 0.0.2 First Release
+* 0.0.3 Addition of support for One to One associations, various bug fixes and testing in Rails 3.0.7, 3.1.0 and 3.2.2
+
+=== Future Features
+
+* <b>Dry Run</b> allow xml_active to do a dry run and report potentail changes rather than making them
+* <b>Events</b> Event hooks in key locations
+* <b>Selective Upates</b> Specify a set of active record objects to effect and leave all the rest alone
+* <b>Many to Many</b> Tested support for has_and_belongs_to_many
+* <b>Polymorphic Associations</b> Tested support for these associations
+
+=== Testing
+In order to perform testing I created an application specifically for the task.  The resulting application is stored on GitHub: https://github.com/michael-harrison/xml_active_bubble
+
+At this stage xml_active has been tested with Rails 3.0.7, 3.1.0 and 3.2.2
+
+This testing will be incorporated in the primary repo in the next major release
