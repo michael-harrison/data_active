@@ -33,5 +33,3 @@ doc
 ## Logging
 *.log
 
-## RVM
-.rvmrc

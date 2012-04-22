@@ -1,0 +1,6 @@
+book_1_price:
+  id: 1
+  sell: 50.00
+  educational: 35.00
+  cost: 20.00
+  book_id: 1

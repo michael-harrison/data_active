@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<books type="array">
+  <book>
+    <id type="Integer">4</id>
+    <name>Book 1</name>
+  </book>
+  <book>
+    <id type="integer">5</id>
+    <name>Book 1</name>
+  </book>
+  <book>
+    <id type="integer">6</id>
+    <name>Book 1</name>
+  </book>
+</books>
