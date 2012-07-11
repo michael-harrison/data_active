@@ -6,14 +6,14 @@ gem 'rails', '3.2.5'
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
 
 gem 'sqlite3'
-gem 'cucumber'
 gem 'data_active', '0.0.1'
-gem 'cucumber-rails'
 
-group :test, :development do
-  gem 'database_cleaner'
+group :test do
+  gem 'cucumber'
+  gem 'cucumber-rails'
   gem 'guard-cucumber'
   gem 'growl_notify'
+  gem 'database_cleaner'
 end
 
 
