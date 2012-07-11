@@ -1,6 +1,6 @@
-= XML Active
+= Data Active
 
-Rails has some really fantastic features for serialisation of ActiveRecord to XML however going back the other way is not so fantastic.  XML Active aims to provide the import of XML into your database while utilising the strengths of ActiveRecord. It extends ActiveRecord allowing it to seamlessly work in with your model.  Here are the features provided by XML Active:
+Rails has some really fantastic features for serialisation of ActiveRecord to XML however going back the other way is not so fantastic.  XML Active aims to provide the import of XML into your database while utilising the strengths of ActiveRecord. It extends ActiveRecord allowing it to seamlessly work in with your model.  Here are the features provided by Data Active:
 
 * Updating of records based on an XML document containing elements matching primary key
 * Creation of records based on elements in an XML

@@ -196,9 +196,13 @@ module DataActive
 
             if association.nil?
               if node.attributes['nil'].try(:value)
-                ar[node_name] = nil
+                node_value = nil
               else
-                ar[node_name] = node.text
+                node_value = node.text
+              end
+
+              if ar.attributes.keys.include? node_name.to_s
+                ar[node_name] = node_value
               end
             end
           end
