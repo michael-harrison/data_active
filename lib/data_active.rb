@@ -102,12 +102,7 @@ module DataActive
 
       current_node = root_node_in source_xml
 
-      if current_node.name.eql?(self.class.name.underscore)
-
-      end
-
-
-      if xml_node_matches_class(current_node)
+      if current_node.name.underscore.eql?(self.name.underscore)
         # Load or create a new record
         pk_node = current_node.xpath self.primary_key.to_s
 
@@ -117,48 +112,28 @@ module DataActive
         unless active_record.nil?
           # Check through associations and apply sync appropriately
           self.reflect_on_all_associations.each do |association|
-            if ActiveRecord::Reflection::AssociationReflection.method_defined? :foreign_key
-              # Support for Rails 3.1 and later
-              foreign_key = association.foreign_key
-            elsif ActiveRecord::Reflection::AssociationReflection.method_defined? :primary_key_name
-              # Support for Rails earlier than 3.1
-              foreign_key = association.primary_key_name
-            else
-              raise "Unsupported version of ActiveRecord. Unable to identify the foreign key."
-            end
+            foreign_key = foreign_key_from(association)
+            klass = association.klass
+
             case
               when association.macro == :has_many, association.macro == :has_and_belongs_to_many
-                # Check to see if xml contains elements for the association
-                if active_record.new_record?
-                  containers = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{pk_node.text}]/#{association.name}")
-                else
-                  containers = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{active_record.attributes[self.primary_key.to_s]}]/#{association.name}")
-                end
-                if containers.count > 0
-                  container = containers[0]
-                  klass = association.klass
-                  child_ids = []
-                  container.element_children.each do |single_obj|
-                    # TODO: Allow for child node that doesn't have a primary key value
-                    child_ids[child_ids.length] = single_obj.xpath(self.primary_key.to_s).text
-                    new_record = klass.one_from_xml(single_obj, options)
-                    if new_record != nil
-                      active_record.__send__(container.name.underscore.to_sym) << new_record
-                    end
+                instances = instances_for association, :from => current_node, :for => active_record
+
+                child_ids = []
+                instances.each do |instance|
+                  new_record = klass.one_from_xml(instance, options)
+                  if new_record != nil
+                    child_ids << new_record[klass.primary_key]
+                    active_record.__send__(klass.name.underscore.pluralize.to_sym) << new_record
                   end
+                end
 
-
-                  unless active_record.new_record?
-                    if options.include?(:sync)
-                      if child_ids.length > 0
-                        klass.destroy_all [klass.primary_key.to_s + " not in (?) and #{foreign_key} = ?", child_ids.collect, active_record.attributes[self.primary_key.to_s]]
-                      end
-                    elsif options.include?(:destroy)
-                      if child_ids.length > 0
-                        klass.destroy_all [klass.primary_key.to_s + " not in (?) and #{foreign_key} = ?", child_ids.collect, active_record.attributes[self.primary_key.to_s]]
-                      else
-                        klass.destroy_all
-                      end
+                unless active_record.new_record?
+                  if options.include?(:sync) or options.include?(:destroy)
+                    if child_ids.length > 0
+                      klass.destroy_all [klass.primary_key.to_s + " not in (?) and #{foreign_key} = ?", child_ids.collect, active_record.attributes[self.primary_key.to_s]]
+                    else
+                      klass.destroy_all
                     end
                   end
                 end
@@ -230,6 +205,56 @@ module DataActive
       else
         raise "The supplied XML (#{current_node.name}) cannot be mapped to this class (#{self.name})"
       end
+    end
+
+    def foreign_key_from(association)
+      if ActiveRecord::Reflection::AssociationReflection.method_defined? :foreign_key
+        # Support for Rails 3.1 and later
+        foreign_key = association.foreign_key
+      elsif ActiveRecord::Reflection::AssociationReflection.method_defined? :primary_key_name
+        # Support for Rails earlier than 3.1
+        foreign_key = association.primary_key_name
+      else
+        raise "Unsupported version of ActiveRecord. Unable to identify the foreign key."
+      end
+      foreign_key
+    end
+
+    def instances_for(association, options)
+      current_node = options[:from]
+      active_record = options[:for]
+
+      # Attempt to find instances which are in the following format
+      # <books>
+      #   <book>
+      #     ...
+      #   </book>
+      #   <book>
+      #     ...
+      #   </book>
+      # </books>
+      if active_record.new_record?
+        results = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{current_node.xpath(self.primary_key.to_s).text}]/#{association.name}")
+      else
+        results = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{active_record.attributes[self.primary_key.to_s]}]/#{association.name}")
+      end
+
+
+      if results.count.eql? 0
+        # Attempt to find instances which are in the following format
+        # <book>
+        #   ...
+        # </book>
+        if active_record.new_record?
+          results = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{current_node.xpath(self.primary_key.to_s).text}]/#{association.name.to_s.singularize}")
+        else
+          results = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{active_record.attributes[self.primary_key.to_s]}]/#{association.name.to_s.singularize}")
+        end
+      else
+        results = results.first.element_children
+      end
+
+      results
     end
 
     def assign_attributes_from(current_node, options)
