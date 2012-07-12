@@ -1,6 +1,6 @@
 = Data Active
 
-Rails has some really fantastic features for serialisation of ActiveRecord to XML however going back the other way is not so fantastic.  XML Active aims to provide the import of XML into your database while utilising the strengths of ActiveRecord. It extends ActiveRecord allowing it to seamlessly work in with your model.  Here are the features provided by Data Active:
+Rails has some really fantastic features for serialisation of ActiveRecord to XML however going back the other way is not so fantastic.  Data Active aims to provide the import of XML into your database while utilising the strengths of ActiveRecord. It extends ActiveRecord allowing it to seamlessly work in with your model.  Here are the features provided by Data Active:
 
 * Updating of records based on an XML document containing elements matching primary key
 * Creation of records based on elements in an XML
@@ -13,8 +13,9 @@ Rails has some really fantastic features for serialisation of ActiveRecord to XM
 
 == XML Documents
 
-XML Active relies on the XML documents created by ActiveRecord in that it utilises the element attributes and document layout.  Following is a sample of an XML document. Note the @type@ attribute which helps to identify elements that are integers, arrays, etc.
+Data Active supports specific XML document styles including those created by ActiveRecord and Microsoft Access.  Following are soem samples of an XML documents that are supported.
 
+Active Record Style
     <books type="array">
       <book>
         <id type="Integer">4</id>
@@ -82,13 +83,79 @@ XML Active relies on the XML documents created by ActiveRecord in that it utilis
     </books>
     </code>
 
+
+Microsoft Style
+    <dataroot xmlns:od="urn:schemas-microsoft-com:officedata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="book.xsd" generated="2012-07-11T16:01:54">
+      <book>
+        <id >1</id>
+        <name>Book 1</name>
+        <book_price>
+          <id >1</id>
+          <sell>50.00</sell>
+          <educational>35.00</educational>
+          <cost>20.00</cost>
+        </book_price>
+        <chapter>
+          <id >1</id>
+          <title>Chapter 1</title>
+          <introduction>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</introduction>
+          <page>
+            <id >1</id>
+            <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+            <number>1</number>
+          </page>
+          <page>
+            <id >2</id>
+            <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+            <number>2</number>
+          </page>
+          <page>
+            <id >3</id>
+            <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+            <number>3</number>
+          </page>
+        </chapter>
+      </book>
+      <book>
+        <id >2</id>
+        <name>Book 12</name>
+        <chapter>
+          <id >4</id>
+          <title>Chapter 1</title>
+          <introduction>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</introduction>
+          <page>
+            <id >12</id>
+            <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+            <number>1</number>
+          </page>
+          <page>
+            <id >13</id>
+            <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+            <number>2</number>
+          </page>
+          <page>
+            <id >14</id>
+            <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+            <number>3</number>
+          </page>
+          <page>
+            <id >15</id>
+            <content>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae hendrerit nec, blandit et felis. Suspendisse vulputate mollis suscipit. Vivamus non libero quis urna gravida euismod quis in nisi. Morbi turpis orci, posuere nec ultrices ut, egestas ac purus. Morbi id pretium erat. In ullamcorper, ligula id porta pellentesque, sem turpis ultricies libero, non elementum ipsum neque at dui. Donec auctor nulla id mi dapibus id faucibus felis mollis. Curabitur imperdiet tristique nisi, consectetur molestie purus accumsan id. Curabitur lacinia diam et nisl iaculis eleifend. Quisque turpis elit, volutpat eget dapibus sed, egestas nec leo. Mauris dignissim tellus non lorem fringilla pharetra.</content>
+            <number>4</number>
+          </page>
+        </chapter>
+      </book>
+    </dataroot>
+
+
 === Database Schema
 
-XML Active will detect the primary key of the tables in your schema even if is a name other than <b>id</b>.  It will use the primary key to match records for update or deletion or creation when they don't exist.  Given this it's very important that the tables that you wish to synchronise have a primary key with auto increment.  The good news is by default Rails will create a primary key field called <b>id</b> that is auto-increment.  At this time XML Active doesn't support compound primary keys.
+Data Active will detect the primary key of the tables in your schema even if is a name other than <b>id</b>.  It will use the primary key to match records for update or deletion or creation when they don't exist.  Given this it's very important that the tables that you wish to synchronise have a primary key with auto increment.  The good news is by default Rails will create a primary key field called <b>id</b> that is auto-increment.  At this time Data Active doesn't support compound primary keys.
 
 === The Model
 
-In order to identify the relationships XML Active it relies on associations so you have to make sure you define your associations in your model.  Following are is a sample model.
+In order to identify the relationships Data Active it relies on associations so you have to make sure you define your associations in your model.  Following are is a sample model.
 
 book.rb
     class Book < ActiveRecord::Base
@@ -106,15 +173,15 @@ page.rb
       belongs_to :chapter
     end
 
-At this stage XML Active has been tested with a limited number of associations.  It is hoped in the future that a more complete set of tests will exist.
+At this stage Data Active has been tested with a limited number of associations.  It is hoped in the future that a more complete set of tests will exist.
 
 == Examples
 
-Now to the meaty part, the examples.  XML Active currenly uses "Nokogiri"(http://nokogiri.org/) to do its XML parsing so you can provide either a <b>Nokogiri::XML::Element</b> or raw XML.
+Now to the meaty part, the examples.  Data Active currenly uses "Nokogiri"(http://nokogiri.org/) to do its XML parsing so you can provide either a <b>Nokogiri::XML::Element</b> or raw XML.
 
 === New Functions
 
-XML Active extends the ActiveRecord class giving you the following functions:
+Data Active extends the ActiveRecord class giving you the following functions:
 
 many_from_xml(xml, options)
 Allows for the import of many records based on an XML document. This function expects an XML document similar to the following with many records in it:
@@ -152,7 +219,7 @@ Following is an example:
 
 === Options
 
-You can combine any of the options (:create, :update or :destroy) and XML Active will only perform the actions provided in the options.  However if you use the :sync option then all other options are ignored.  Following are the current options:
+You can combine any of the options (:create, :update or :destroy) and Data Active will only perform the actions provided in the options.  However if you use the :sync option then all other options are ignored.  Following are the current options:
 
 * <b>:update</b> records in the database that match those in the provided XML document based on classes in the model, associations and the primary key.
 
@@ -160,10 +227,10 @@ You can combine any of the options (:create, :update or :destroy) and XML Active
 
 * <b>:destroy</b> records in the database that don't exist in the provided XML document. Matching is based on classes in the model, associations and the primary key.  This respects validation by using the ActiveRecord destroy rather than delete.
 
-* <b>:sync</b> is really the combination of :create, :update and :destroy. Using this option will cause XML Active to ignore :create, :update and :destroy options and will proceed to make your database records match those in the XML document.
+* <b>:sync</b> is really the combination of :create, :update and :destroy. Using this option will cause Data Active to ignore :create, :update and :destroy options and will proceed to make your database records match those in the XML document.
 
 === One to One Associations
-XML Active supports has_one association with all options and following arr the behaviours of XML Active with each option:
+Data Active supports has_one association with all options and following arr the behaviours of Data Active with each option:
 
 <b>:update</b>
 
@@ -191,20 +258,18 @@ XML Active supports has_one association with all options and following arr the b
 
 === Versions
 
-* 0.0.2 First Release
-* 0.0.3 Addition of support for One to One associations, various bug fixes and testing in Rails 3.0.7, 3.1.0 and 3.2.2
+* 0.0.1 First Release
 
 === Future Features
 
-* <b>Dry Run</b> allow xml_active to do a dry run and report potentail changes rather than making them
+* <b>Dry Run</b> allow data_active to do a dry run and report potentail changes rather than making them
 * <b>Events</b> Event hooks in key locations
 * <b>Selective Upates</b> Specify a set of active record objects to effect and leave all the rest alone
 * <b>Many to Many</b> Tested support for has_and_belongs_to_many
 * <b>Polymorphic Associations</b> Tested support for these associations
 
 === Testing
-In order to perform testing I created an application specifically for the task.  The resulting application is stored on GitHub: https://github.com/michael-harrison/xml_active_bubble
+In order to perform testing I created a number of test applications which can be found in the test_apps folder.  These
+applications target specific versions of rails utilising cucumber for testing
 
-At this stage xml_active has been tested with Rails 3.0.7, 3.1.0 and 3.2.2
-
-This testing will be incorporated in the primary repo in the next major release
+At this stage data_active has been tested with Rails 3.1.x and 3.2.x

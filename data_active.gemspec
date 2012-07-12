@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.email       = %w(michael@focalpause.com)
   s.homepage    = "https://github.com/michael-harrison/data_active"
   s.summary     = "data_active #{s.version}"
-  s.description = %q{XML Active is an extension of ActiveRecord that provides features to synchronise an ActiveRecord Model with a supplied XML document}
+  s.description = %q{Data Active is an extension of ActiveRecord that provides features to synchronise an ActiveRecord Model with a supplied XML document}
 
   s.rubyforge_project = "data_active"
 
