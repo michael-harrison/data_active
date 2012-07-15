@@ -19,84 +19,6 @@ module DataActive
       many_from root_node_in source_xml
     end
 
-    def many_from(current_node)
-      case
-        when self.name.pluralize.underscore.eql?(current_node.name.underscore)
-          many_from_rails_xml current_node
-
-        when (current_node.name.eql?('dataroot') \
-          and current_node.namespace_definitions.map { |ns| ns.href }.include?('urn:schemas-microsoft-com:officedata'))
-          # Identified as data generated from Microsoft Access
-          many_from_ms_xml current_node
-
-        when self.name.underscore.eql?(current_node.name.underscore)
-          raise "The supplied XML (#{current_node.name}) is a single instance of '#{self.name}'. Please use one_from_xml"
-
-        else
-          raise "The supplied XML (#{current_node.name}) cannot be mapped to this class (#{self.name})"
-
-      end
-    end
-
-    def many_from_ms_xml(current_node)
-      records = []
-      recorded_ids = []
-
-      current_node.element_children.each do |node|
-        if self.name.underscore.eql?(node.name.underscore)
-          record = self.one_from_xml(node, @data_active_options)
-          if record
-            recorded_ids << record[primary_key.to_sym]
-            records << record
-          end
-        end
-      end
-
-      remove_records_not_in recorded_ids
-
-      records
-    end
-
-    def many_from_rails_xml(current_node)
-      records = []
-      recorded_ids = []
-
-      current_node.element_children.each do |node|
-        record = self.one_from_xml(node, @data_active_options)
-        if record
-          recorded_ids << record[primary_key.to_sym]
-          records << record
-        end
-      end
-
-      remove_records_not_in recorded_ids
-
-      records
-    end
-
-    def remove_records_not_in(recorded_ids)
-      if @data_active_options.include?(:sync)
-        if recorded_ids.length > 0
-          self.destroy_all [self.primary_key.to_s + " not in (?)", recorded_ids.collect]
-        end
-      elsif @data_active_options.include?(:destroy)
-        if recorded_ids.length > 0
-          self.destroy_all [self.primary_key.to_s + " not in (?)", recorded_ids.collect]
-        else
-          self.destroy_all
-        end
-      end
-    end
-
-    def root_node_in(source_xml)
-      if source_xml.is_a?(String)
-        doc = Nokogiri::XML(source_xml)
-        doc.children.first
-      else
-        source_xml
-      end
-    end
-
     def one_from_xml(source_xml, options = [])
       @data_active_options = options
 
@@ -108,8 +30,22 @@ module DataActive
 
         active_record = find_record_based_on(pk_node)
 
-
         unless active_record.nil?
+          # Process the attributes
+          if options.include? :update or options.include? :sync or options.include? :create
+            assign_attributes_from current_node, :to => active_record
+          end
+
+          # Save the record
+          if options.include? :sync
+            # Doing complete synchronisation with XML
+            active_record.save
+          elsif options.include?(:create) and active_record.new_record?
+            active_record.save
+          elsif options.include?(:update) and not active_record.new_record?
+            active_record.save
+          end
+
           # Check through associations and apply sync appropriately
           self.reflect_on_all_associations.each do |association|
             foreign_key = foreign_key_from(association)
@@ -184,21 +120,6 @@ module DataActive
                 raise "unsupported association #{association.macro} for #{association.name  } on #{self.name}"
             end
           end
-
-          # Process the attributes
-          if options.include? :update or options.include? :sync or options.include? :create
-            assign_attributes_from current_node, :to => active_record
-          end
-
-          # Save the record
-          if options.include? :sync
-            # Doing complete synchronisation with XML
-            active_record.save
-          elsif options.include?(:create) and active_record.new_record?
-            active_record.save
-          elsif options.include?(:update) and not active_record.new_record?
-            active_record.save
-          end
         end
 
         active_record
@@ -207,17 +128,50 @@ module DataActive
       end
     end
 
-    def foreign_key_from(association)
-      if ActiveRecord::Reflection::AssociationReflection.method_defined? :foreign_key
-        # Support for Rails 3.1 and later
-        foreign_key = association.foreign_key
-      elsif ActiveRecord::Reflection::AssociationReflection.method_defined? :primary_key_name
-        # Support for Rails earlier than 3.1
-        foreign_key = association.primary_key_name
+    private
+    def xml_node_matches_class(xml_node)
+      if xml_node.attributes['type'].blank?
+        xml_node.name.underscore == self.name.underscore
       else
-        raise "Unsupported version of ActiveRecord. Unable to identify the foreign key."
+        xml_node.attributes['type'].value.underscore == self.name.underscore
       end
-      foreign_key
+    end
+
+    def find_record_based_on(pk_node)
+      ar = nil
+      if pk_node
+        begin
+          ar = find pk_node.text
+        rescue
+          # No record exists, create a new one
+          if @data_active_options.include?(:sync) or @data_active_options.include?(:create)
+            ar = self.new
+          end
+        end
+      else
+        # No primary key value, must be a new record
+        if @data_active_options.include?(:sync) or @data_active_options.include?(:create)
+          ar = self.new
+        end
+      end
+      ar
+    end
+
+    def assign_attributes_from(current_node, options)
+      record = options[:to]
+
+      record.attributes.each do |name, value|
+        attribute_nodes = current_node.xpath name.to_s
+        if attribute_nodes.count == 1
+          if attribute_nodes[0].attributes['nil'].try(:value)
+            record[name] = nil
+          else
+            record[name] = attribute_nodes[0].text
+          end
+        elsif attribute_nodes.count > 1
+          raise "Found duplicate elements in xml for active record attribute '#{name}'"
+        end
+      end
     end
 
     def instances_for(association, options)
@@ -257,48 +211,94 @@ module DataActive
       results
     end
 
-    def assign_attributes_from(current_node, options)
-      record = options[:to]
+    def foreign_key_from(association)
+      if ActiveRecord::Reflection::AssociationReflection.method_defined? :foreign_key
+        # Support for Rails 3.1 and later
+        foreign_key = association.foreign_key
+      elsif ActiveRecord::Reflection::AssociationReflection.method_defined? :primary_key_name
+        # Support for Rails earlier than 3.1
+        foreign_key = association.primary_key_name
+      else
+        raise "Unsupported version of ActiveRecord. Unable to identify the foreign key."
+      end
+      foreign_key
+    end
 
-      record.attributes.each do |name, value|
-        attribute_nodes = current_node.xpath name.to_s
-        if attribute_nodes.count == 1
-          if attribute_nodes[0].attributes['nil'].try(:value)
-            record[name] = nil
-          else
-            record[name] = attribute_nodes[0].text
-          end
-        elsif attribute_nodes.count > 1
-          raise "Found duplicate elements in xml for active record attribute '#{name}'"
+    def root_node_in(source_xml)
+      if source_xml.is_a?(String)
+        doc = Nokogiri::XML(source_xml)
+        doc.children.first
+      else
+        source_xml
+      end
+    end
+
+    def remove_records_not_in(recorded_ids)
+      if @data_active_options.include?(:sync)
+        if recorded_ids.length > 0
+          self.destroy_all [self.primary_key.to_s + " not in (?)", recorded_ids.collect]
+        end
+      elsif @data_active_options.include?(:destroy)
+        if recorded_ids.length > 0
+          self.destroy_all [self.primary_key.to_s + " not in (?)", recorded_ids.collect]
+        else
+          self.destroy_all
         end
       end
     end
 
-    def find_record_based_on(pk_node)
-      ar = nil
-      if pk_node
-        begin
-          ar = find pk_node.text
-        rescue
-          # No record exists, create a new one
-          if @data_active_options.include?(:sync) or @data_active_options.include?(:create)
-            ar = self.new
-          end
-        end
-      else
-        # No primary key value, must be a new record
-        if @data_active_options.include?(:sync) or @data_active_options.include?(:create)
-          ar = self.new
+    def many_from_rails_xml(current_node)
+      records = []
+      recorded_ids = []
+
+      current_node.element_children.each do |node|
+        record = self.one_from_xml(node, @data_active_options)
+        if record
+          recorded_ids << record[primary_key.to_sym]
+          records << record
         end
       end
-      ar
+
+      remove_records_not_in recorded_ids
+
+      records
     end
 
-    def xml_node_matches_class(xml_node)
-      if xml_node.attributes['type'].blank?
-        xml_node.name.underscore == self.name.underscore
-      else
-        xml_node.attributes['type'].value.underscore == self.name.underscore
+    def many_from_ms_xml(current_node)
+      records = []
+      recorded_ids = []
+
+      current_node.element_children.each do |node|
+        if self.name.underscore.eql?(node.name.underscore)
+          record = self.one_from_xml(node, @data_active_options)
+          if record
+            recorded_ids << record[primary_key.to_sym]
+            records << record
+          end
+        end
+      end
+
+      remove_records_not_in recorded_ids
+
+      records
+    end
+
+    def many_from(current_node)
+      case
+        when self.name.pluralize.underscore.eql?(current_node.name.underscore)
+          many_from_rails_xml current_node
+
+        when (current_node.name.eql?('dataroot') \
+          and current_node.namespace_definitions.map { |ns| ns.href }.include?('urn:schemas-microsoft-com:officedata'))
+          # Identified as data generated from Microsoft Access
+          many_from_ms_xml current_node
+
+        when self.name.underscore.eql?(current_node.name.underscore)
+          raise "The supplied XML (#{current_node.name}) is a single instance of '#{self.name}'. Please use one_from_xml"
+
+        else
+          raise "The supplied XML (#{current_node.name}) cannot be mapped to this class (#{self.name})"
+
       end
     end
   end
