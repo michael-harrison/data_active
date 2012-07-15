@@ -259,6 +259,7 @@ Data Active supports has_one association with all options and following arr the 
 === Versions
 
 * 0.0.1 First Release
+* 0.0.2 Resolved issue where the parent record in a one to many relationship had not been saved causing validation errors when saving child records
 
 === Future Features
 
