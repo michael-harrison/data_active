@@ -9,6 +9,8 @@ Rails has some really fantastic features for serialisation of ActiveRecord to XM
 * Choose to combine update, create and remove actions
 * Synchronise your database with an XML Document
 
+(NB: This gem was based on xml_active (https://github.com/michael-harrison/xml_active) which has been retired)
+
 == The Background
 
 == XML Documents
