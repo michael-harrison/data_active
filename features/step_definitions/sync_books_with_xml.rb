@@ -222,3 +222,18 @@ end
 Given /^I have a fresh set of books without any chapters$/ do
   StepHelper.load_fixtures File.join(Rails.root, 'features', 'support', 'fixtures', 'without_chapters')
 end
+
+When /^I synchronise with "([^"]*)" using the "([^"]*)" (?:option|options)$/ do |xml_document_file, sync_options|
+  @error_message = nil
+  begin
+    options = sync_options.split(',').map {|option| option.strip.to_sym }
+    puts options
+    Book.many_from_xml(File.open(Rails.root.join(xml_document_file)).read, [:sync] + options) != nil
+  rescue Exception => ex
+    @error_message = ex.message
+  end
+end
+
+Then /^I should have a failure$/ do
+  fail "no error message" if @error_message.nil?
+end

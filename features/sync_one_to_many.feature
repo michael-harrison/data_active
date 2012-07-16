@@ -32,3 +32,9 @@ Feature: Synchronise one to many relationships
     And I have the "features/support/fixtures/xml/books_with_removed_chapters.xml" file
     When I synchronise with "features/support/fixtures/xml/books_one_to_one_removed.xml"
     Then the chapters will be identical to those in "features/support/fixtures/xml/books_one_to_one_removed.xml"
+
+  Scenario: Providing an invalid set of records
+    Given I have no books
+    And I have the "features/support/fixtures/xml/books_changed_bad.xml" file
+    When I synchronise with "features/support/fixtures/xml/books_changed_bad.xml" using the "fail_on_invalid" option
+    Then I should have a failure

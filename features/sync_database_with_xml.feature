@@ -30,5 +30,3 @@ Feature: Synchronise database with XML
     | xml_file                                                  |
     | features/support/fixtures/xml/books_changed.xml           |
     | features/support/fixtures/xml/ms_access/books_changed.xml |
-    
-  Scenario: A one to one association exists on the current ActiveRecord class

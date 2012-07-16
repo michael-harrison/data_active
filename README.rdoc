@@ -229,6 +229,9 @@ You can combine any of the options (:create, :update or :destroy) and Data Activ
 
 * <b>:sync</b> is really the combination of :create, :update and :destroy. Using this option will cause Data Active to ignore :create, :update and :destroy options and will proceed to make your database records match those in the XML document.
 
+* <b>:fail_on_invalid</b> will raise an exception when an invalid record is found (i.e. one that doesn't pass the model validity rules).  When this option isn't used Data Active will fail silently not saving the invalid record.
+
+
 === One to One Associations
 Data Active supports has_one association with all options and following arr the behaviours of Data Active with each option:
 
@@ -260,6 +263,7 @@ Data Active supports has_one association with all options and following arr the 
 
 * 0.0.1 First Release
 * 0.0.2 Resolved issue where the parent record in a one to many relationship had not been saved causing validation errors when saving child records
+* 0.0.3 Added option to raise exception when an invalid record id found
 
 === Future Features
 

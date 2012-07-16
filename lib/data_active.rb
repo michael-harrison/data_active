@@ -11,7 +11,7 @@ module DataActive
     end while self.class.exists?(name => self[name])
   end
 
-  VALID_FROM_XML_OPTIONS = [:sync, :create, :update, :destroy]
+  VALID_FROM_XML_OPTIONS = [:sync, :create, :update, :destroy, :fail_on_invalid]
 
   module ClassMethods
     def many_from_xml(source_xml, options = [])
@@ -34,6 +34,10 @@ module DataActive
           # Process the attributes
           if options.include? :update or options.include? :sync or options.include? :create
             assign_attributes_from current_node, :to => active_record
+            if options.include? :fail_on_invalid and !active_record.valid?
+              messages = active_record.errors.messages.map {|attribute, messages| "#{attribute} #{messages.map{|message| message }.join(', ')}"}.join(', ')
+              raise "Found an invalid #{active_record.class.name} with the following errors: #{messages}. Source: #{current_node.to_s}"
+            end
           end
 
           # Save the record
