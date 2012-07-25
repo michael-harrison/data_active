@@ -40,16 +40,6 @@ module DataActive
             end
           end
 
-          # Save the record
-          if options.include? :sync
-            # Doing complete synchronisation with XML
-            active_record.save
-          elsif options.include?(:create) and active_record.new_record?
-            active_record.save
-          elsif options.include?(:update) and not active_record.new_record?
-            active_record.save
-          end
-
           # Check through associations and apply sync appropriately
           self.reflect_on_all_associations.each do |association|
             foreign_key = foreign_key_from(association)
@@ -124,6 +114,16 @@ module DataActive
                 raise "unsupported association #{association.macro} for #{association.name  } on #{self.name}"
             end
           end
+
+          # Save the record
+          if options.include? :sync
+            # Doing complete synchronisation with XML
+            active_record.save
+          elsif options.include?(:create) and active_record.new_record?
+            active_record.save
+          elsif options.include?(:update) and not active_record.new_record?
+            active_record.save
+          end
         end
 
         active_record
@@ -192,7 +192,7 @@ module DataActive
       #   </book>
       # </books>
       if active_record.new_record?
-        results = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{current_node.xpath(self.primary_key.to_s).text}]/#{association.name}")
+        results = current_node.xpath("#{association.name}")
       else
         results = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{active_record.attributes[self.primary_key.to_s]}]/#{association.name}")
       end
@@ -204,7 +204,7 @@ module DataActive
         #   ...
         # </book>
         if active_record.new_record?
-          results = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{current_node.xpath(self.primary_key.to_s).text}]/#{association.name.to_s.singularize}")
+          results = current_node.xpath("#{association.name.to_s.singularize}")
         else
           results = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{active_record.attributes[self.primary_key.to_s]}]/#{association.name.to_s.singularize}")
         end

@@ -73,6 +73,27 @@ Then /^the books in the database will be identical to those in "([^"]*)"$/ do |x
   end
 end
 
+Then /^the books in the database will be identical to those in "([^"]*)" with new ids$/ do |xml_document_file|
+  books_in_database = Book.all
+  books_xml_document = Nokogiri::XML(File.open(Rails.root.join(xml_document_file)).read)
+
+  # Ensure that all books in the xml document have been recorded
+  book_elements = books_xml_document.xpath("//book")
+  book_elements.each do |book_element|
+    book_name = book_element.xpath("//book/name")[0].text
+    book = Book.where(:name => book_name).first
+    if book == nil
+      fail "Books for #{book_name} is missing"
+    end
+  end
+
+  # Ensure there are not extra books
+  books_in_xml = books_xml_document.xpath("//book")
+  if books_in_database.count != books_in_xml.count
+    fail "There number of books in the database (#{books_in_database.count}) doesn't match the number of books in the xml document (#{books_in_xml.count})"
+  end
+end
+
 When /^the book price will be identical to those in "([^"]*)"$/ do |xml_document_file|
   book_prices_in_database = BookPrice.all
   if book_prices_in_database.count > 0
@@ -162,6 +183,40 @@ When /^the chapters will be identical to those in "([^"]*)"$/ do |xml_document_f
   end
 end
 
+When /^the chapters will be identical to those in "([^"]*)" with new ids$/ do |xml_document_file|
+  xml_document = Nokogiri::XML(File.open(Rails.root.join(xml_document_file)).read)
+
+  # Ensure that all chapters in the xml document have been recorded
+  xml_document.xpath("//book").each do |book_element|
+    book = Book.where(:name => book_element.xpath("name")[0].text).first
+    book_id = book.id
+    xml_document.xpath("//book[name[text()='#{book_id}']]/chapters/chapter").each do |chapter_element|
+      chapter_title = chapter_element.xpath("title")[0].text
+      chapter_introduction = chapter_element.xpath("introduction")[0].text
+      chapter = book.chapters.where(:title => chapter_title)
+
+      if chapter == nil
+        fail "Chapters #{chapter_title} is missing"
+      else
+        if chapter_introduction != chapter.introduction
+          fail "Chapter introduction in database doesn't match chapter introduction in xml for chapter #{chapter_title}, XML: #{chapter_introduction}, Database: #{chapter.introduction}"
+        end
+        if book_id != chapter.book_id.to_s
+          fail "Chapter book_id in database doesn't match chapter book_id in xml for chapter #{chapter_title}, XML: #{book_id}, Database: #{chapter.book_id}"
+        end
+      end
+    end
+  end
+
+
+  # Ensure there are not extra chapters
+  chapters_in_xml = xml_document.xpath("//chapter")
+  chapter_count = Chapter.count
+  if chapter_count != chapters_in_xml.count
+    fail "There number of chapters in the database (#{chapter_count}) doesn't match the number of chapters in the xml document (#{chapters_in_xml.count})"
+  end
+end
+
 When /^the database will contain identical pages for the chapters as those in "([^"]*)"$/ do |xml_document_file|
   chapters_in_database = Chapter.all
   if chapters_in_database.count > 0
@@ -173,7 +228,7 @@ When /^the database will contain identical pages for the chapters as those in "(
       xml_document.xpath("//book[id[text()='#{book_id}']]/chapters/chapter").each do |chapter_element|
         chapter_id = chapter_element.xpath("id")[0].text
         pages = Page.where(:chapter_id => chapter_id)
-        if (pages.count > 0)
+        if pages.count > 0
           xml_document.xpath("//chapter[id[text()='#{chapter_id}']]/pages/page").each do |page_element|
             page_id = page_element.xpath("id")[0].text
             page_content = page_element.xpath("content")[0].text
