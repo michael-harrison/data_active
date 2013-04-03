@@ -19,6 +19,44 @@ module DataActive
       many_from root_node_in source_xml
     end
 
+    def many_from(current_node)
+      case
+        when (is_ms_access_xml?(current_node) or is_rails_like_xml?(current_node))
+          process_children_for current_node
+
+        when self.name.underscore.eql?(current_node.name.underscore)
+          raise "The supplied XML (#{current_node.name}) is a single instance of '#{self.name}'. Please use one_from_xml"
+
+        else
+          raise "The supplied XML (#{current_node.name}) cannot be mapped to this class (#{self.name})"
+
+      end
+    end
+
+    def process_children_for(current_node)
+      records = []
+      recorded_ids = []
+
+      current_node.xpath(".//#{self.name.underscore}").each do |node|
+        record = self.one_from_xml(node, @data_active_options)
+        if record
+          recorded_ids << record[primary_key.to_sym]
+          records << record
+        end
+      end
+
+      remove_records_not_in recorded_ids
+      records
+    end
+
+    def is_ms_access_xml?(node)
+      node.name.eql?('dataroot') and node.namespace_definitions.map { |ns| ns.href }.include?('urn:schemas-microsoft-com:officedata')
+    end
+
+    def is_rails_like_xml?(current_node)
+      self.name.pluralize.underscore.eql?(current_node.name.underscore)
+    end
+
     def one_from_xml(source_xml, options = [])
       @data_active_options = options
 
@@ -41,7 +79,6 @@ module DataActive
           end
 
           # Check through associations and apply sync appropriately
-          associations = self.reflect_on_all_associations
           self.reflect_on_all_associations.each do |association|
             foreign_key = foreign_key_from(association)
             klass = association.klass
@@ -257,61 +294,6 @@ module DataActive
         else
           self.destroy_all
         end
-      end
-    end
-
-    def many_from_rails_xml(current_node)
-      records = []
-      recorded_ids = []
-
-      current_node.element_children.each do |node|
-        record = self.one_from_xml(node, @data_active_options)
-        if record
-          recorded_ids << record[primary_key.to_sym]
-          records << record
-        end
-      end
-
-      remove_records_not_in recorded_ids
-
-      records
-    end
-
-    def many_from_ms_xml(current_node)
-      records = []
-      recorded_ids = []
-
-      current_node.element_children.each do |node|
-        if self.name.underscore.eql?(node.name.underscore)
-          record = self.one_from_xml(node, @data_active_options)
-          if record
-            recorded_ids << record[primary_key.to_sym]
-            records << record
-          end
-        end
-      end
-
-      remove_records_not_in recorded_ids
-
-      records
-    end
-
-    def many_from(current_node)
-      case
-        when self.name.pluralize.underscore.eql?(current_node.name.underscore)
-          many_from_rails_xml current_node
-
-        when (current_node.name.eql?('dataroot') \
-          and current_node.namespace_definitions.map { |ns| ns.href }.include?('urn:schemas-microsoft-com:officedata'))
-          # Identified as data generated from Microsoft Access
-          many_from_ms_xml current_node
-
-        when self.name.underscore.eql?(current_node.name.underscore)
-          raise "The supplied XML (#{current_node.name}) is a single instance of '#{self.name}'. Please use one_from_xml"
-
-        else
-          raise "The supplied XML (#{current_node.name}) cannot be mapped to this class (#{self.name})"
-
       end
     end
   end
