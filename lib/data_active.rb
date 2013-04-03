@@ -35,12 +35,13 @@ module DataActive
           if options.include? :update or options.include? :sync or options.include? :create
             assign_attributes_from current_node, :to => active_record
             if options.include? :fail_on_invalid and !active_record.valid?
-              messages = active_record.errors.messages.map {|attribute, messages| "#{attribute} #{messages.map{|message| message }.join(', ')}"}.join(', ')
+              messages = active_record.errors.messages.map { |attribute, messages| "#{attribute} #{messages.map { |message| message }.join(', ')}" }.join(', ')
               raise "Found an invalid #{active_record.class.name} with the following errors: #{messages}. Source: #{current_node.to_s}"
             end
           end
 
           # Check through associations and apply sync appropriately
+          associations = self.reflect_on_all_associations
           self.reflect_on_all_associations.each do |association|
             foreign_key = foreign_key_from(association)
             klass = association.klass
@@ -69,25 +70,31 @@ module DataActive
                 end
 
               when association.macro == :has_one
-                pk_value = active_record.new_record? ? 0 : active_record.attributes[self.primary_key.to_s]
-                single_objects = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{pk_value}]/#{association.name}")
                 klass = association.klass
-                record = klass.where(foreign_key => active_record.attributes[self.primary_key.to_s]).all
+                if active_record.new_record?
+                  single_objects = current_node.xpath(".//#{association.name}")
+                else
+                  record = klass.where(foreign_key => active_record.attributes[self.primary_key.to_s]).all
+                  single_objects = current_node.xpath("//#{self.name.underscore}[#{self.primary_key}=#{active_record.attributes[self.primary_key.to_s]}]/#{association.name}")
+                end
+
                 if single_objects.count == 1
                   # Check to see if the already record exists
-                  if record.count == 1
-                    db_pk_value = record[0][klass.primary_key]
-                    xml_pk_value = Integer(single_objects[0].element_children.xpath("//#{self.name.underscore}/#{klass.primary_key}").text)
+                  if record.present?
+                    if record.count == 1
+                      db_pk_value = record[0][klass.primary_key]
+                      xml_pk_value = Integer(single_objects[0].element_children.xpath("//#{self.name.underscore}/#{klass.primary_key}").text)
 
-                    if db_pk_value != xml_pk_value
-                      # Different record in xml
-                      if options.include?(:sync) or options.include?(:destroy)
-                        # Delete the one in the database
-                        klass.destroy(record[0][klass.primary_key])
+                      if db_pk_value != xml_pk_value
+                        # Different record in xml
+                        if options.include?(:sync) or options.include?(:destroy)
+                          # Delete the one in the database
+                          klass.destroy(record[0][klass.primary_key])
+                        end
                       end
+                    elsif record.count > 1
+                      raise "Too many records for one to one association in the database. Found #{record.count} records of '#{association.name}' for association with '#{self.name}'"
                     end
-                  elsif record.count > 1
-                    raise "Too many records for one to one association in the database. Found #{record.count} records of '#{association.name}' for association with '#{self.name}'"
                   end
 
                   if options.include?(:create) or options.include?(:update) or options.include?(:sync)
@@ -102,9 +109,11 @@ module DataActive
                   raise "Too many records for one to one association in the provided XML. Found #{single_objects.count} records of '#{association.name}' for association with '#{self.name}'"
                 else
                   # There are no records in the XML
-                  if record.count > 0 and options.include?(:sync) or options.include?(:destroy)
-                    # Found some in the database: destroy then
-                    klass.destroy_all("#{foreign_key} = #{active_record.attributes[self.primary_key.to_s]}")
+                  if record.present?
+                    if record.count > 0 and options.include?(:sync) or options.include?(:destroy)
+                      # Found some in the database: destroy then
+                      klass.destroy_all("#{foreign_key} = #{active_record.attributes[self.primary_key.to_s]}")
+                    end
                   end
                 end
 

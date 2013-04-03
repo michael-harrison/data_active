@@ -6,7 +6,7 @@ gem 'rails', '3.2.6'
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
 
 gem 'sqlite3'
-gem 'data_active', '0.0.1'
+gem 'data_active', '0.0.5'
 
 group :test do
   gem 'cucumber'
