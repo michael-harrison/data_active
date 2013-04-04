@@ -110,6 +110,12 @@ When /^the book price will be identical to those in "([^"]*)"$/ do |xml_document
         if book_price.nil?
           fail "BookPrice with id #{book_price_id} is missing"
         else
+          if book_price.book_id.nil?
+            fail "BookPrice.book_id in database isn't being set (expecting book_id = #{book_id})"
+          elsif book_price.book_id != book_id.to_i
+            fail "BookPrice.book_id in database is set incorrectly (expecting book_id = #{book_id} and got #{book_price.book_id})"
+          end
+
           book_price_sell = book_price_element.xpath("sell").text
           book_price_educational = book_price_element.xpath("educational").text
           book_price_cost = book_price_element.xpath("cost").text
@@ -137,6 +143,40 @@ When /^the book price will be identical to those in "([^"]*)"$/ do |xml_document
     book_prices_in_xml = xml_document.xpath("//book_price")
     if book_prices_in_database.count != book_prices_in_xml.count
       fail "There number of book prices in the database (#{book_prices_in_database.count}) doesn't match the number of book prices in the xml document (#{book_prices_in_xml.count})"
+    end
+  end
+end
+
+When /^the book price will be identical to those in "([^"]*)" with new ids$/ do |xml_document_file|
+  xml_document = Nokogiri::XML(File.open(Rails.root.join(xml_document_file)).read)
+
+  # Ensure that all chapters in the xml document have been recorded
+  xml_document.xpath('//book').each do |book_element|
+    book = Book.find_by_name book_element.xpath('name')[0].text
+    book_id = book.id
+    book_price_element = book_element.xpath('book_price')
+    book_price = BookPrice.find_by_book_id book_id
+
+    fail 'Too many book prices' if book_price_element.count > 1
+
+    if book_price.nil?
+      fail "BookPrice for book '#{book.name}' is missing"
+    else
+      book_price_sell = book_price_element.xpath('sell').text
+      book_price_educational = book_price_element.xpath('educational').text
+      book_price_cost = book_price_element.xpath('cost').text
+
+      if Float(book_price_sell) != book_price.sell
+        fail "BookPrice 'sell' in database doesn't match book price sell in xml for book '#{book.name}', XML: #{book_price_sell}, Database: #{book_price.sell}"
+      end
+
+      if Float(book_price_cost) != book_price.cost
+        fail "BookPrice 'cost' in database doesn't match book price cost in xml for book '#{book.name}', XML: #{book_price_cost}, Database: #{book_price.cost}"
+      end
+
+      if Float(book_price_educational) != book_price.educational
+        fail "BookPrice 'educational' in database doesn't match book price educational in xml for book '#{book.name}', XML: #{book_price_educational}, Database: #{book_price.educational}"
+      end
     end
   end
 end
@@ -190,18 +230,23 @@ When /^the chapters will be identical to those in "([^"]*)" with new ids$/ do |x
   xml_document.xpath("//book").each do |book_element|
     book = Book.where(:name => book_element.xpath("name")[0].text).first
     book_id = book.id
-    xml_document.xpath("//book[name[text()='#{book_id}']]/chapters/chapter").each do |chapter_element|
+    xml_document.xpath("//book[name[text()='#{book.name}']]/chapters/chapter").each do |chapter_element|
       chapter_title = chapter_element.xpath("title")[0].text
       chapter_introduction = chapter_element.xpath("introduction")[0].text
-      chapter = book.chapters.where(:title => chapter_title)
+      chapter = book.chapters.where(:title => chapter_title).first
 
       if chapter == nil
         fail "Chapters #{chapter_title} is missing"
       else
+        if chapter.book_id.nil?
+          fail "Chapter.book_id in database isn't being set (expecting book_id = #{book_id}"
+        elsif chapter.book_id != book_id
+          fail "Chapter.book_id in database is set incorrectly (expecting book_id = #{book_id} and got #{chapter.book_id})"
+        end
         if chapter_introduction != chapter.introduction
           fail "Chapter introduction in database doesn't match chapter introduction in xml for chapter #{chapter_title}, XML: #{chapter_introduction}, Database: #{chapter.introduction}"
         end
-        if book_id != chapter.book_id.to_s
+        if book_id != chapter.book_id
           fail "Chapter book_id in database doesn't match chapter book_id in xml for chapter #{chapter_title}, XML: #{book_id}, Database: #{chapter.book_id}"
         end
       end

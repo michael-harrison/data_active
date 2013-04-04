@@ -74,6 +74,11 @@
   </book>
   <book>
     <name>Book 1</name>
+    <book_price>
+      <sell>50.00</sell>
+      <educational>35.00</educational>
+      <cost>20.00</cost>
+    </book_price>
     <chapters type="array">
       <chapter>
         <title>Chapter 1</title>

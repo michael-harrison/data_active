@@ -45,6 +45,7 @@ Feature: Synchronise one to many relationships
     When I synchronise with "<xml_file>"
     Then the books in the database will be identical to those in "<xml_file>" with new ids
     And the chapters will be identical to those in "<xml_file>" with new ids
+    And the book price will be identical to those in "<xml_file>" with new ids
 
   Examples:
     | xml_file                                                            |

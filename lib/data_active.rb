@@ -28,7 +28,7 @@ module DataActive
         # Load or create a new record
         pk_node = current_node.xpath self.primary_key.to_s
 
-        active_record = find_record_based_on(pk_node)
+        active_record = find_or_create_based_on(pk_node)
 
         unless active_record.nil?
           # Process the attributes
@@ -100,7 +100,11 @@ module DataActive
                     new_record = klass.one_from_xml(single_objects[0], options)
                     if new_record != nil
                       new_record[foreign_key.to_sym] = active_record[self.primary_key.to_s]
-                      new_record.save!
+                      if active_record.new_record?
+                        active_record.send("#{klass.name.underscore.to_sym}=", new_record)
+                      else
+                        new_record.save!
+                      end
                     end
                   end
                 elsif single_objects.count > 1
@@ -187,7 +191,7 @@ module DataActive
       end
     end
 
-    def find_record_based_on(pk_node)
+    def find_or_create_based_on(pk_node)
       ar = nil
       if pk_node
         begin
@@ -269,7 +273,7 @@ module DataActive
         # Support for Rails earlier than 3.1
         foreign_key = association.primary_key_name
       else
-        raise "Unsupported version of ActiveRecord. Unable to identify the foreign key."
+        raise 'Unsupported version of ActiveRecord. Unable to identify the foreign key.'
       end
       foreign_key
     end

@@ -110,6 +110,11 @@
   </book>
   <book>
     <name>Book 2</name>
+    <book_price>
+      <sell>50.00</sell>
+      <educational>35.00</educational>
+      <cost>20.00</cost>
+    </book_price>
     <chapter>
       <title>B2 Chapter 1</title>
       <introduction>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus purus nulla, condimentum vitae
