@@ -6,16 +6,18 @@ gem 'rails', '3.2.6'
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
 
 gem 'sqlite3'
-gem 'data_active', '0.0.5'
+gem 'data_active', '0.0.6'
+gem 'nokogiri'
 
 group :test do
   gem 'cucumber'
-  gem 'cucumber-rails'
   gem 'guard-cucumber'
   gem 'growl_notify'
   gem 'database_cleaner'
+  gem 'cucumber-rails'
 end
 
+gem 'rspec-rails', '~> 2.0', :groups => [:test, :development]
 
 # Gems used only for assets and not required
 # in production environments by default.
