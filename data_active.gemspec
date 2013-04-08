@@ -1,21 +1,23 @@
 # -*- encoding: utf-8 -*-
-$:.push File.expand_path("../lib", __FILE__)
-require "data_active/version"
+$:.push File.expand_path('../lib', __FILE__)
+require 'data_active/version'
 
 Gem::Specification.new do |s|
-  s.name        = "data_active"
+  s.name        = 'data_active'
   s.version     = DataActive::VERSION
-  s.authors     = ["Michael Harrison"]
+  s.authors     = ['Michael Harrison']
   s.email       = %w(michael@focalpause.com)
-  s.homepage    = "https://github.com/michael-harrison/data_active"
+  s.homepage    = 'https://github.com/michael-harrison/data_active'
   s.summary     = "data_active #{s.version}"
   s.description = %q{Data Active is an extension of ActiveRecord that provides features to synchronise an ActiveRecord Model with a supplied XML document}
 
-  s.rubyforge_project = "data_active"
+  s.rubyforge_project = 'data_active'
 
   s.add_dependency 'nokogiri'
   s.add_dependency 'rails'
   s.add_development_dependency 'rake'
+  s.add_development_dependency 'rspec'
+  s.add_development_dependency 'rspec-rails'
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test_apps,test,spec,features}/*`.split("\n")
