@@ -26,26 +26,51 @@ describe DataActive::Parser do
     end
 
     it ('should record known attributes against the entity') do
-      parser.begin('book')
+      parser
+      .begin('book')
+        .begin('id').content('1').end('id')
+        .begin('name').content('101 Testing').end('name')
+        .begin('full_name').content('101 Testing: Your start to testing').end('full_name') # Unknown attribute
 
-      parser.begin('id')
-      parser.content('1')
-      parser.end('id')
+      entity = parser.stack.last
+      entity.attributes['id'].name.should eq 'id'
+      entity.attributes['id'].content.should eq '1'
+      entity.attributes['name'].name.should eq 'name'
+      entity.attributes['name'].content.should eq '101 Testing'
+      attributes = entity.attributes.select { |key, a| a.name == 'full_name' }
+      attributes.count.should eq 0
+    end
 
-      parser.begin('name')
-      parser.content('101 Testing')
-      parser.end('name')
+    it ('should create records when the :create option is in use') do
+      parser.options << :create
 
-      # Unknown attribute
-      parser.begin('full_name')
-      parser.content('101 Testing: Your start to testing')
-      parser.end('full_name')
+      parser
+      .begin('book')
+        .begin('id').content('2').end('id')
+        .begin('name').content('101 Testing').end('name')
+      .end('book')
 
-      parser.stack.last.attributes[0].name.should eq 'id'
-      parser.stack.last.attributes[0].content.should eq '1'
-      parser.stack.last.attributes[1].name.should eq 'name'
-      parser.stack.last.attributes[1].content.should eq '101 Testing'
-      parser.stack.last.attributes.select{ |a| a.name == 'full_name' }.count.should eq 0
+      books = Book.all
+      books.count.should eq 1
+      books[0].id.should eq 1
+      books[0].name.should eq '101 Testing'
+    end
+
+    it ('will update records when the :update option is in use') do
+      book = Book.create! name: '101 Testing'
+
+      parser.options << :update
+
+      parser
+      .begin('book')
+        .begin('id').content(book.id).end('id')
+        .begin('name').content('101 Testing again').end('name')
+      .end('book')
+
+      books = Book.all
+      books.count.should eq 1
+      books[0].id.should eq 1
+      books[0].name.should eq '101 Testing again'
     end
 
     it ('should raise an error when strict mode is used') do
@@ -53,9 +78,7 @@ describe DataActive::Parser do
       parser.begin('book')
       failed = true
       begin
-        parser.begin('bogus')
-        parser.content('1')
-        parser.end('bogus')
+        parser.begin('bogus').content('1').end('bogus')
       rescue
         failed = false
       end
@@ -63,21 +86,19 @@ describe DataActive::Parser do
     end
 
     it ('should all unknown element when not in strict mode') do
-      parser.begin('book')
-      parser.begin('bogus')
-      parser.content('1')
-      parser.end('bogus')
+      parser
+      .begin('book')
+        .begin('bogus').content('1').end('bogus')
     end
   end
 
   context 'when parsing associations' do
     let (:parser) { DataActive::Parser.new('book') }
     it ('will get upset about mismatched tags') do
-      parser.begin('book')
+      parser
+      .begin('book')
+        .begin('id').content('1').end('id')
 
-      parser.begin('id')
-      parser.content('1')
-      parser.end('id')
       failed = true
       begin
         parser.end('chapter')
@@ -89,75 +110,43 @@ describe DataActive::Parser do
 
     end
     it ('should parse all associations known and unknown') do
-      parser.begin('book')
-      parser.begin('id')
-      parser.content('1')
-      parser.end('id')
-
-      parser.begin('chapter')
-      parser.stack.last.klass.name.should eq 'Chapter'
-      parser.begin('id')
-      parser.content('2')
-      parser.end('id')
-      parser.begin('title')
-      parser.content('20/20 hindsight')
-      parser.end('title')
-      parser.end('chapter')
-
-      parser.begin('appendix')
-      parser.begin('id')
-      parser.content('3')
-      parser.end('id')
-      parser.begin('name')
-      parser.content('Appendix A - Swimming Rules')
-      parser.end('name')
-      parser.begin('body')
-      parser.content('some swimming rules')
-      parser.end('body')
-      parser.end('appendix')
-
-      parser.begin('chapter')
-      parser.stack.last.klass.name.should eq 'Chapter'
-      parser.begin('id')
-      parser.content('3')
-      parser.end('id')
-      parser.begin('title')
-      parser.content('The future')
-      parser.end('title')
-      parser.end('chapter')
-
-      parser.end('book')
+      parser
+      .begin('book')
+        .begin('id').content('1').end('id')
+        .begin('chapter')
+          .begin('id').content('2').end('id')
+          .begin('title').content('20/20 hindsight').end('title')
+        .end('chapter')
+        .begin('appendix')
+          .begin('id').content('3').end('id')
+          .begin('name').content('Appendix A - Swimming Rules').end('name')
+          .begin('body').content('some swimming rules').end('body')
+        .end('appendix')
+        .begin('chapter')
+          .begin('id').content('3').end('id')
+          .begin('title').content('The future').end('title')
+        .end('chapter')
+      .end('book')
     end
 
     it ('should parse only known associations when in strict mode') do
       parser.options << :strict
-      parser.begin('book')
-      parser.begin('id')
-      parser.content('1')
-      parser.end('id')
 
-      parser.begin('chapter')
-      parser.stack.last.klass.name.should eq 'Chapter'
-      parser.begin('id')
-      parser.content('2')
-      parser.end('id')
-      parser.begin('title')
-      parser.content('20/20 hindsight')
-      parser.end('title')
-      parser.end('chapter')
+      parser
+      .begin('book')
+        .begin('id').content('1').end('id')
+        .begin('chapter')
+          .begin('id').content('2').end('id')
+          .begin('title').content('20/20 hindsight').end('title')
+        .end('chapter')
 
       failed = true
       begin
-        parser.begin('appendix')
-        parser.begin('id')
-        parser.content('3')
-        parser.end('id')
-        parser.begin('name')
-        parser.content('Appendix A - Swimming Rules')
-        parser.end('name')
-        parser.begin('body')
-        parser.content('some swimming rules')
-        parser.end('body')
+        parser
+        .begin('appendix')
+          .begin('id').content('3').end('id')
+          .begin('name').content('Appendix A - Swimming Rules').end('name')
+          .begin('body').content('some swimming rules').end('body')
       rescue
         failed = false
       end

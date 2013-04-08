@@ -16,7 +16,9 @@ module DataActive
           if @stack.last.has_attribute? name
             @stack << DataActive::Attribute.new(name)
           elsif @stack.last.has_association_with? name
-            @stack << DataActive::Entity.new(name, @options)
+            entity = DataActive::Entity.new(name, @options)
+            entity.belongs_to = @stack.last
+            @stack << entity
           else
             raise "Unknown element '#{name}' for #{@stack.last.klass.name}" if @options.include? :strict
             @stack << DataActive::Attribute.new(name, false)
@@ -27,11 +29,15 @@ module DataActive
       else
         @stack << DataActive::Entity.new(name, @options) if @first_element_name == name
       end
+
+      self
     end
 
     def content(value)
       raise "'#{@stack.last.klass.name}' contains text" if @stack.last.class.name == 'DataActive::Entity'
       @stack.last.content = value
+
+      self
     end
 
     def end(name)
@@ -44,12 +50,13 @@ module DataActive
         when 'DataActive::Attribute'
           raise "Mismatched closing tag '#{name}' when opening tag was #{@stack.last.name}" unless @stack.last.name.eql? name
           attribute = @stack.pop()
-          @stack.last.attributes << attribute if attribute.known
+          @stack.last.attributes[attribute.name] = attribute if attribute.known
 
         else
           raise "Unhandled class '#{@stack.last.class.name}'"
       end
 
+      self
     end
 
     def has_started_parsing?
