@@ -94,6 +94,7 @@ describe DataActive::Parser do
 
   context 'when parsing associations' do
     let (:parser) { DataActive::Parser.new('book') }
+
     it ('will get upset about mismatched tags') do
       parser
       .begin('book')
@@ -109,10 +110,13 @@ describe DataActive::Parser do
       fail('Allowed mismatched tags') if failed
 
     end
+
     it ('should parse all associations known and unknown') do
+      parser.options << :create
       parser
       .begin('book')
         .begin('id').content('1').end('id')
+        .begin('name').content('Past, now and future').end('name')
         .begin('chapter')
           .begin('id').content('2').end('id')
           .begin('title').content('20/20 hindsight').end('title')
@@ -127,6 +131,111 @@ describe DataActive::Parser do
           .begin('title').content('The future').end('title')
         .end('chapter')
       .end('book')
+    end
+
+    it ('should update :has_many associations with existing parent') do
+      parser.options << :create
+      parser.options << :update
+
+      parser
+      .begin('book')
+        .begin('name').content('101 Testing again').end('name')
+      .end('book')
+
+      books = Book.all
+
+      parser
+      .begin('book')
+        .begin('id').content(books[0].id).end('id')
+        .begin('name').content('Past, now and future').end('name')
+        .begin('chapter')
+          .begin('id').content('2').end('id')
+          .begin('title').content('20/20 hindsight').end('title')
+        .end('chapter')
+        .begin('chapter')
+          .begin('id').content('3').end('id')
+          .begin('title').content('The future').end('title')
+        .end('chapter')
+      .end('book')
+
+      books = Book.all
+      books.count.should eq 1
+      chapters = Chapter.all
+      chapters.count.should eq 2
+      chapters[0].book_id.should eq books[0].id
+      chapters[1].book_id.should eq books[0].id
+    end
+
+    it ('should update :has_many associations') do
+      parser.options << :create
+
+      parser
+      .begin('book')
+        .begin('id').content('1').end('id')
+        .begin('name').content('Past, now and future').end('name')
+        .begin('chapter')
+          .begin('id').content('2').end('id')
+          .begin('title').content('20/20 hindsight').end('title')
+        .end('chapter')
+        .begin('chapter')
+          .begin('id').content('3').end('id')
+          .begin('title').content('The future').end('title')
+        .end('chapter')
+      .end('book')
+
+      books = Book.all
+      books.count.should eq 1
+      chapters = Chapter.all
+      chapters.count.should eq 2
+      chapters[0].book_id.should eq books[0].id
+      chapters[1].book_id.should eq books[0].id
+    end
+
+    it ('should update :has_one associations with existing parent') do
+      parser.options << :create
+      parser.options << :update
+
+      parser
+      .begin('book')
+        .begin('name').content('101 Testing again').end('name')
+      .end('book')
+
+      books = Book.all
+
+      parser
+      .begin('book')
+        .begin('id').content(books[0].id).end('id')
+        .begin('name').content('Past, now and future').end('name')
+        .begin('book_price')
+          .begin('id').content('2').end('id')
+          .begin('educational').content('10.0').end('educational')
+        .end('book_price')
+      .end('book')
+
+      books = Book.all
+      books.count.should eq 1
+      book_prices = BookPrice.all
+      book_prices.count.should eq 1
+      book_prices[0].book_id.should eq books[0].id
+    end
+
+    it ('should update :has_one associations') do
+      parser.options << :create
+      parser
+      .begin('book')
+        .begin('id').content('1').end('id')
+        .begin('name').content('Past, now and future').end('name')
+        .begin('book_price')
+          .begin('id').content('2').end('id')
+          .begin('educational').content('10.0').end('educational')
+        .end('book_price')
+      .end('book')
+
+      books = Book.all
+      books.count.should eq 1
+      book_prices = BookPrice.all
+      book_prices.count.should eq 1
+      book_prices[0].book_id.should eq books[0].id
     end
 
     it ('should parse only known associations when in strict mode') do
