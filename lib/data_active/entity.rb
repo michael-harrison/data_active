@@ -6,17 +6,28 @@ module DataActive
     attr_reader :tag_name
     attr_accessor :belongs_to
     attr_accessor :record
+    attr_accessor :excluded
 
-    def initialize(tag_name, options = [])
+    def initialize(tag_name, options = [], excluded = false)
       @tag_name = tag_name
       @options = options
       @attributes = {}
+      @associations = []
+      @excluded = excluded
 
-      @klass = Kernel.const_get(@tag_name.camelize)
-      raise "Class '#{@tag_name.camelize}' is not inherit ActiveRecord" unless @klass.ancestors.include? ActiveRecord::Base
-      @associations = @klass.reflect_on_all_associations.map { |a| a.plural_name }
-      @record = @klass.new
+      unless @excluded
+        begin
+          @klass = Kernel.const_get(@tag_name.camelize)
+          raise "Class '#{@tag_name.camelize}' is not inherit ActiveRecord" unless @klass.ancestors.include? ActiveRecord::Base
+          @associations = @klass.reflect_on_all_associations.map { |a| a.plural_name }
+          @record = @klass.new
+        rescue
+          @excluded = true
+        end
+      end
     end
+
+
 
     def options_include? (context, options)
       case context
@@ -31,7 +42,11 @@ module DataActive
     end
 
     def has_attribute?(name)
-      @record.attributes.include? name
+      if @excluded
+        false
+      else
+        @record.attributes.include? name
+      end
     end
 
     def has_association_with?(name)

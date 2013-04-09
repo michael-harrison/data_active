@@ -6,40 +6,20 @@ module DataActive
       @parser = DataActive::Parser.new(first_element_name, options)
     end
 
-    def start_document
-
-    end
-
-    def end_document
-
-    end
-
-    def start_element_namespace
-
-    end
-
-    def end_element_namespace
-
-    end
-
     def start_element(name, attr)
       @parser.begin(name)
     end
 
     def end_element(name)
-      puts "end: #{name}"
+      @parser.end(name)
     end
 
     def cdata_block(value)
-      "text #{value}"
+      @parser.content(value)
     end
 
     def characters(value)
-      "text #{value}"
-    end
-
-    def error
-
+      @parser.content(value)
     end
   end
 end

@@ -95,6 +95,17 @@ describe DataActive::Parser do
   context 'when parsing associations' do
     let (:parser) { DataActive::Parser.new('book') }
 
+    it ('will parse until it gets to the first element') do
+        parser
+      .begin('library')
+        .begin('id').content('1').end('id')
+        .begin('book')
+          .begin('id').content('1').end('id')
+        .end('book')
+      .end('library')
+
+    end
+
     it ('will get upset about mismatched tags') do
       parser
       .begin('book')
