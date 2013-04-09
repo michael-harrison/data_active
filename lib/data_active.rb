@@ -19,9 +19,13 @@ module DataActive
 
   module ClassMethods
     def many_from_xml(source_xml, options = [])
+      parser = Nokogiri::XML::SAX::Parser.new(DataActive::SaxDocument.new(self.name.underscore, options))
+      parser.parse(source_xml)
     end
 
     def one_from_xml(source_xml, options = [])
+      parser = Nokogiri::XML::SAX::Parser.new(DataActive::SaxDocument.new(self.name.underscore, options))
+      parser.parse(source_xml)
     end
   end
 end

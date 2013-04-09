@@ -21,7 +21,7 @@ When /^I have the "([^"]*)" file$/ do |xml_document_file|
 end
 
 When /^I synchronise with "([^"]*)"$/ do |xml_document_file|
-  Book.many_from_xml(File.open(Rails.root.join(xml_document_file)).read, [:sync]) != nil
+  Book.many_from_xml(File.open(Rails.root.join(xml_document_file)), [:sync]) != nil
 end
 
 When /^I synchronise with "([^"]*)" I should get an error$/ do |xml_document_file|
