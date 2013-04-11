@@ -12,36 +12,46 @@ module DataActive
     end
 
     def begin(name)
-      if has_started_parsing?
-        if @stack.last.class.name == 'DataActive::Entity'
-          if @stack.last.tag_name == name.pluralize
-            entity = DataActive::Entity.new(name, @options)
-            if @stack.last.tag_name == name.pluralize
-              entity.belongs_to = @stack.last.belongs_to
-            else
-              entity.belongs_to = @stack.last
-            end
-            @stack << entity
-          elsif @stack.last.has_attribute? name
-            @stack << DataActive::Attribute.new(name)
-          elsif @stack.last.has_association_with? name
-            entity = DataActive::Entity.new(name, @options)
-            entity.belongs_to = @stack.last
-
-            @stack << entity
-          else
-            raise "Unknown element '#{name}' for #{@stack.last.klass.name}" if @options.include? :strict
-            @stack << DataActive::Attribute.new(name, false)
-          end
-        elsif @stack.last.class.name == 'DataActive::Attribute' and not @stack.last.known
-          @stack << DataActive::Attribute.new(name, false)
-        end
-      else
-        @stack << DataActive::Entity.new(name, @options, @first_element_name != name)
-        @started_parsing = (@first_element_name == name)
-      end
+      @started_parsing = (@first_element_name == name) if not @started_parsing
+      process_element(name)
 
       self
+    end
+
+    def process_element(name)
+      if @stack.last.nil?
+        @stack << DataActive::Entity.new(name, @options, !@started_parsing)
+      elsif @stack.last.class.name == 'DataActive::Entity'
+        process_entity_child(name)
+      elsif @stack.last.class.name == 'DataActive::Attribute' and not @stack.last.known
+        @stack << DataActive::Attribute.new(name, false)
+      end
+    end
+
+    def process_entity_child(name)
+      parent = @stack.last
+      if parent.has_association_with? name or parent.tag_name == name.pluralize
+        create_child_entity(name)
+      elsif parent.has_attribute? name
+        @stack << DataActive::Attribute.new(name)
+      elsif parent.excluded
+        @stack << DataActive::Attribute.new(name, false)
+      else
+        raise "Unknown element '#{name}' for #{parent.klass.name}" if @options.include? :strict
+        @stack << DataActive::Attribute.new(name, false)
+      end
+    end
+
+    def create_child_entity(name)
+      entity = DataActive::Entity.new(name, @options, !@started_parsing)
+
+      if @stack.last.tag_name == name.pluralize
+        entity.belongs_to = @stack.last.belongs_to
+      else
+        entity.belongs_to = @stack.last
+      end
+
+      @stack << entity
     end
 
     def content(value)

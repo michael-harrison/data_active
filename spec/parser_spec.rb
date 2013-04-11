@@ -155,6 +155,10 @@ describe DataActive::Parser do
 
       books = Book.all
 
+      parser = DataActive::Parser.new('book')
+      parser.options << :create
+      parser.options << :update
+
       parser
       .begin('book')
         .begin('id').content(books[0].id).end('id')
@@ -212,6 +216,10 @@ describe DataActive::Parser do
       .end('book')
 
       books = Book.all
+
+      parser = DataActive::Parser.new('book')
+      parser.options << :create
+      parser.options << :update
 
       parser
       .begin('book')
