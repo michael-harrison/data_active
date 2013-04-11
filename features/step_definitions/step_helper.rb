@@ -1,14 +1,15 @@
 module StepHelper
   def StepHelper.load_fixtures(path)
-    fixtures_folder = path
-    fixtures = Dir[File.join(fixtures_folder, '*.yml')].map {|f| File.basename(f, '.yml') }
+    fixtures = Dir[File.join(path, '*.yml')].map {|f| File.basename(f, '.yml') }
 
     if defined? Fixtures == nil
+      puts 'create via Fixtures'
       Fixtures.reset_cache
-      Fixtures.create_fixtures(fixtures_folder, fixtures)
+      Fixtures.create_fixtures(path, fixtures)
     else
+      puts 'create via ActiveRecord::Fixtures'
       ActiveRecord::Fixtures.reset_cache
-      ActiveRecord::Fixtures.create_fixtures(fixtures_folder, fixtures)
+      ActiveRecord::Fixtures.create_fixtures(path, fixtures)
     end
   end
 end

@@ -28,7 +28,6 @@ module DataActive
     end
 
 
-
     def options_include? (context, options)
       case context
         when :all
@@ -54,11 +53,24 @@ module DataActive
     end
 
     def commit
-      commit_record if options_include? :any, [:create, :update, :sync]
+      id = nil
+      existing_record = find_existing
+      @attributes.delete(@klass.primary_key.to_s)
+
+      if existing_record.nil? and options_include? :any, [:create, :sync]
+        id = save
+      elsif existing_record.present? and options_include? :any, [:update, :sync]
+        @record = existing_record
+        id = save
+      elsif options_include? :any, [:destroy, :sync]
+        id = @record.attributes[@klass.primary_key.to_s]
+      end
+
+      id
     end
 
     def update_associations
-      if belongs_to.present?
+      if belongs_to.present? and not belongs_to.excluded
         association = belongs_to.klass.reflect_on_all_associations.select { |a| a.plural_name == @klass.name.underscore.pluralize }[0]
         if belongs_to.record.new_record?
           existing = belongs_to.find_existing
@@ -109,24 +121,14 @@ module DataActive
       existing_record
     end
 
-    def commit_record
-      existing_record = find_existing
-
-      @attributes.delete(@klass.primary_key.to_s)
-      if existing_record.nil? and options_include? :any, [:create, :sync]
-        commit_attibutes
-        update_associations
-        @record.save!
-      elsif existing_record.present? and options_include? :any, [:update, :sync]
-        @record = existing_record
-        commit_attibutes
-        update_associations
-        @record.save!
-      end
-
+    def save
+      commit_attributes
+      update_associations
+      @record.save!
+      @record.attributes[@klass.primary_key.to_s]
     end
 
-    def commit_attibutes
+    def commit_attributes
       @attributes.each do |key, a|
         @record.__send__("#{a.name}=", a.content)
       end

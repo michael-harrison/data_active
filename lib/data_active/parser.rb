@@ -3,16 +3,39 @@ module DataActive
     attr_accessor :options
     attr_reader :stack
     attr_reader :first_element_name
+    attr_reader :root_klass
 
     def initialize(first_element_name, options = [])
       @options = options
       @stack = []
       @first_element_name = first_element_name
       @started_parsing = false
+      @processed_entities = {}
+      @root_klass = nil
+    end
+
+    def options_include? (context, options)
+      case context
+        when :all
+          (@options & options).count == options.count
+
+        when :any
+          (@options & options).count > 0
+        else
+          0
+      end
     end
 
     def begin(name)
-      @started_parsing = (@first_element_name == name) if not @started_parsing
+      if not @started_parsing and @first_element_name == name
+        @started_parsing = true
+        begin
+          @root_klass = Kernel.const_get(name.camelize)
+        rescue
+          raise "Unable to find class for '#{name}'"
+        end
+      end
+
       process_element(name)
 
       self
@@ -34,12 +57,27 @@ module DataActive
         create_child_entity(name)
       elsif parent.has_attribute? name
         @stack << DataActive::Attribute.new(name)
+      elsif klass_exists? name
+        create_child_entity(name)
       elsif parent.excluded
         @stack << DataActive::Attribute.new(name, false)
       else
         raise "Unknown element '#{name}' for #{parent.klass.name}" if @options.include? :strict
         @stack << DataActive::Attribute.new(name, false)
       end
+    end
+
+    def klass_exists? name
+      is_klass = true
+
+      begin
+        klass = Kernel.const_get(name.camelize)
+        fail unless klass.ancestors.include? ActiveRecord::Base
+      rescue
+        is_klass = false
+      end
+
+      is_klass
     end
 
     def create_child_entity(name)
@@ -69,7 +107,8 @@ module DataActive
         when 'DataActive::Entity'
           raise "Mismatched closing tag '#{name}' when opening tag was #{@stack.last.tag_name}" unless @stack.last.tag_name.eql? name
           entity = @stack.pop()
-          entity.commit() if not entity.excluded
+
+          store_processed_entity_id(entity.klass, entity.commit()) if not entity.excluded
 
         when 'DataActive::Attribute'
           raise "Mismatched closing tag '#{name}' when opening tag was #{@stack.last.name}" unless @stack.last.name.eql? name
@@ -81,6 +120,34 @@ module DataActive
       end
 
       self
+    end
+
+    def destroy(klass = self.root_klass)
+      if options_include? :any, [:destroy, :sync]
+        klass.reflect_on_all_associations.each do |a|
+          case a.macro
+            when :has_many, :has_many_and_belongs_to, :has_one
+              destroy(a.klass)
+          end
+        end
+
+        ids = @processed_entities[klass.name.to_sym]
+        if ids.nil?
+          klass.destroy_all
+        else
+          klass.destroy_all [klass.primary_key.to_s + ' not in (?)', ids.collect]
+        end
+      end
+    end
+
+    def store_processed_entity_id(klass, id)
+      return if id.nil?
+
+      if @processed_entities[klass.name.to_sym].present?
+        @processed_entities[klass.name.to_sym] << id
+      else
+        @processed_entities[klass.name.to_sym] = [id]
+      end
     end
 
     def has_started_parsing?

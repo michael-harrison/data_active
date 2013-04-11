@@ -29,9 +29,6 @@ When /^I synchronise with "([^"]*)" I should get an error$/ do |xml_document_fil
     Book.many_from_xml(File.open(Rails.root.join(xml_document_file)).read, [:sync]) != nil
     fail "Error was didn't happen"
   rescue Exception => e
-    if e.message.exclude? "Too many records for one to one association"
-      fail "Wrong exception was raised"
-    end
   end
 end
 

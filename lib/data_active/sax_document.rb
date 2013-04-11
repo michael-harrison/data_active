@@ -21,5 +21,9 @@ module DataActive
     def characters(value)
       @parser.content(value)
     end
+
+    def end_document
+      @parser.destroy
+    end
   end
 end
