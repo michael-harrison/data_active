@@ -15,12 +15,6 @@ Feature: Synchronise one to many relationships
     When I synchronise with "features/support/fixtures/xml/books_with_changed_chapters.xml"
     Then the chapters will be identical to those in "features/support/fixtures/xml/books_with_changed_chapters.xml"
 
-  Scenario: Replace records in the database
-    Given I have a fresh set of books
-    And I have the "features/support/fixtures/xml/books_with_mismatched_chapters.xml" file
-    When I synchronise with "features/support/fixtures/xml/books_with_mismatched_chapters.xml"
-    Then the chapters will be identical to those in "features/support/fixtures/xml/books_with_mismatched_chapters.xml"
-
   Scenario: Parent changes records in the database
     Given I have a fresh set of books
     And I have the "features/support/fixtures/xml/books_with_moved_chapters.xml" file
