@@ -25,11 +25,14 @@ When /^I synchronise with "([^"]*)"$/ do |xml_document_file|
 end
 
 When /^I synchronise with "([^"]*)" I should get an error$/ do |xml_document_file|
+  failed = true
   begin
     Book.many_from_xml(File.open(Rails.root.join(xml_document_file)).read, [:sync]) != nil
-    fail "Error was didn't happen"
-  rescue Exception => e
+  rescue
+    failed = false
   end
+
+  fail "Error was didn't happen" if failed
 end
 
 When /^I update with "([^"]*)"$/ do |xml_document_file|
@@ -281,7 +284,7 @@ When /^the database will contain identical pages for the chapters as those in "(
               fail "Page with id #{page_id} is missing"
             else
               if page_content != page.content
-                file "Page content in database doesn't match page content in xml for page with id #{page_id}, XML: #{page_content}, Database: #{page.content}"
+                fail "Page content in database doesn't match page content in xml for page with id #{page_id}, XML: #{page_content}, Database: #{page.content}"
               end
               
               if page_number != page.number.to_s
