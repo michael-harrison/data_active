@@ -1,3 +1,5 @@
+require 'set'
+
 module DataActive
   class Entity
     attr_reader :attributes
@@ -12,14 +14,14 @@ module DataActive
       @tag_name = tag_name
       @options = options
       @attributes = {}
-      @associations = []
+      @associations = {}
       @excluded = excluded
 
       unless @excluded
         begin
           @klass = Kernel.const_get(@tag_name.camelize)
           raise "Class '#{@tag_name.camelize}' is not inherit ActiveRecord" unless @klass.ancestors.include? ActiveRecord::Base
-          @associations = @klass.reflect_on_all_associations.map { |a| a.plural_name }
+          @associations = Hash[@klass.reflect_on_all_associations.map { |a| [a.plural_name.to_sym, a] }]
           @record = @klass.new
         rescue
           @excluded = true
@@ -49,7 +51,7 @@ module DataActive
     end
 
     def has_association_with?(name)
-      @associations.include? name.pluralize
+      @associations.has_key? name.pluralize.to_sym
     end
 
     def commit
@@ -124,8 +126,27 @@ module DataActive
     def save
       commit_attributes
       update_associations
-      @record.save!
-      @record.attributes[@klass.primary_key.to_s]
+
+      if will_violate_association?
+        @record.save!
+        @record.attributes[@klass.primary_key.to_s]
+      end
+    end
+
+    def will_violate_association?
+      ok = true
+      if belongs_to.present? and belongs_to.associations.count > 0
+        if belongs_to.associations[@tag_name.pluralize.to_sym].macro == :has_one
+          existing = belongs_to.record.__send__(@tag_name)
+          if existing.present?
+            if @record.__send__(@klass.primary_key.to_s) != existing.__send__(@klass.primary_key.to_s)
+              ok = false
+            end
+          end
+        end
+      end
+
+      ok
     end
 
     def commit_attributes

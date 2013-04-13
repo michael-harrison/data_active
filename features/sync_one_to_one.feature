@@ -30,4 +30,4 @@ Feature: Synchronise one to one relationships
   Scenario: Duplicate records in the xml
     Given I have a fresh set of books
     And I have the "features/support/fixtures/xml/books_with_many_one_to_one_records.xml" file
-    When I synchronise with "features/support/fixtures/xml/books_with_many_one_to_one_records.xml" I should get an error
+    When I synchronise with "features/support/fixtures/xml/books_with_many_one_to_one_records.xml" I should only have one book price for all books

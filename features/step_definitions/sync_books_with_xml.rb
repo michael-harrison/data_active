@@ -337,3 +337,7 @@ end
 Then /^I should have a failure$/ do
   fail "no error message" if @error_message.nil?
 end
+When /^I synchronise with "([^"]*)" I should only have one book price for all books$/ do |xml_document_file|
+  Book.many_from_xml(File.open(Rails.root.join(xml_document_file)).read, [:sync])
+  BookPrice.count.should eq 1
+end
