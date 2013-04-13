@@ -24,8 +24,7 @@ module DataActive
     end
 
     def one_from_xml(source_xml, options = [])
-      parser = Nokogiri::XML::SAX::Parser.new(DataActive::SaxDocument.new(self.name.underscore, options))
-      parser.parse(source_xml)
+      many_from_xml(source_xml, options)
     end
   end
 end
