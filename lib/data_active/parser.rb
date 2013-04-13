@@ -96,7 +96,7 @@ module DataActive
       if @stack.last.class.name == 'DataActive::Entity'
         raise "'#{@stack.last.tag_name}' contains text '#{value}'" if value.strip.length > 0
       else
-        @stack.last.content = value
+        @stack.last.content = @stack.last.content.nil? ? value : @stack.last.content + value
       end
 
       self

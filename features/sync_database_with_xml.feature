@@ -28,5 +28,5 @@ Feature: Synchronise database with XML
 
   Examples: 
     | xml_file                                                  |
-    | features/support/fixtures/xml/books_changed.xml           |
-    | features/support/fixtures/xml/ms_access/books_changed.xml |
+    | features/support/fixtures/xml/books_fresh.xml           |
+    | features/support/fixtures/xml/ms_access/books_fresh.xml |
