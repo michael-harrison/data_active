@@ -15,8 +15,8 @@ module DataActive
     end
 
     def options_include? (context, options)
-      ((@options & options).count.eql? options.count and  context.eql? :all) ||
-        ((@options & options).count > 0 and  context.eql? :any)
+      ((@options & options).count.eql? options.count and context.eql? :all) ||
+        ((@options & options).count > 0 and context.eql? :any)
     end
 
     def begin(name)
@@ -127,19 +127,19 @@ module DataActive
       if options_include? :any, [:destroy, :sync]
         klass.reflect_on_all_associations.each do |a|
           if [:has_many, :has_many_and_belongs_to, :has_one].include? a.macro and @destroyed.exclude? a.klass.name
-                @destroyed << a.klass.name
-                destroy(a.klass)
+            @destroyed << a.klass.name
+            destroy(a.klass)
           end
         end
 
-        ids = @processed_entities[klass.name.to_sym]
-        if ids.nil?
-          klass.destroy_all
-        else
-          klass.destroy_all [klass.primary_key.to_s + ' not in (?)', ids.collect]
-        end
+        destroy_records(klass)
         @destroyed << klass.name
       end
+    end
+
+    def destroy_records(klass)
+      ids = @processed_entities[klass.name.to_sym]
+      ids.nil? ? klass.destroy_all : klass.destroy_all([klass.primary_key.to_s + ' not in (?)', ids.collect])
     end
 
     def store_processed_entity_id(klass, id)
