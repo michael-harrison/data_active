@@ -15,15 +15,8 @@ module DataActive
     end
 
     def options_include? (context, options)
-      case context
-        when :all
-          (@options & options).count == options.count
-
-        when :any
-          (@options & options).count > 0
-        else
-          0
-      end
+      ((@options & options).count.eql? options.count and  context.eql? :all) ||
+        ((@options & options).count > 0 and  context.eql? :any)
     end
 
     def begin(name)
@@ -134,8 +127,8 @@ module DataActive
       if options_include? :any, [:destroy, :sync]
         klass.reflect_on_all_associations.each do |a|
           if [:has_many, :has_many_and_belongs_to, :has_one].include? a.macro and @destroyed.exclude? a.klass.name
-            @destroyed << a.klass.name
-            destroy(a.klass)
+                @destroyed << a.klass.name
+                destroy(a.klass)
           end
         end
 

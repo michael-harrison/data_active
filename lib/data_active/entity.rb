@@ -31,15 +31,8 @@ module DataActive
 
 
     def options_include? (context, options)
-      case context
-        when :all
-          (@options & options).count == options.count
-
-        when :any
-          (@options & options).count > 0
-        else
-          0
-      end
+      ((@options & options).count.eql? options.count and  context.eql? :all) ||
+        ((@options & options).count > 0 and  context.eql? :any)
     end
 
     def has_attribute?(name)
