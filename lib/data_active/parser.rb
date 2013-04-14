@@ -105,15 +105,10 @@ module DataActive
     def end(name)
       case @stack.last.class.name
         when 'DataActive::Entity'
-          raise "Mismatched closing tag '#{name}' when opening tag was #{@stack.last.tag_name}" unless @stack.last.tag_name.eql? name
-          entity = @stack.pop()
-
-          store_processed_entity_id(entity.klass, entity.commit()) if not entity.excluded
+          end_entity(name)
 
         when 'DataActive::Attribute'
-          raise "Mismatched closing tag '#{name}' when opening tag was #{@stack.last.name}" unless @stack.last.name.eql? name
-          attribute = @stack.pop()
-          @stack.last.attributes[attribute.name] = attribute if attribute.known
+          end_attribute(name)
 
         else
           raise "Unhandled class '#{@stack.last.class.name}'"
@@ -122,12 +117,25 @@ module DataActive
       self
     end
 
+    def end_attribute(name)
+      raise "Mismatched closing tag '#{name}' when opening tag was #{@stack.last.name}" unless @stack.last.name.eql? name
+      attribute = @stack.pop()
+      @stack.last.attributes[attribute.name] = attribute if attribute.known
+    end
+
+    def end_entity(name)
+      raise "Mismatched closing tag '#{name}' when opening tag was #{@stack.last.tag_name}" unless @stack.last.tag_name.eql? name
+      entity = @stack.pop()
+      store_processed_entity_id(entity.klass, entity.commit()) if not entity.excluded
+    end
+
     def destroy(klass = self.root_klass)
+      @destroyed ||= []
       if options_include? :any, [:destroy, :sync]
         klass.reflect_on_all_associations.each do |a|
-          case a.macro
-            when :has_many, :has_many_and_belongs_to, :has_one
-              destroy(a.klass)
+          if [:has_many, :has_many_and_belongs_to, :has_one].include? a.macro and @destroyed.exclude? a.klass.name
+            @destroyed << a.klass.name
+            destroy(a.klass)
           end
         end
 
@@ -137,6 +145,7 @@ module DataActive
         else
           klass.destroy_all [klass.primary_key.to_s + ' not in (?)', ids.collect]
         end
+        @destroyed << klass.name
       end
     end
 
