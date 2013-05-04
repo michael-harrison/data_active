@@ -205,7 +205,7 @@ books_changed.xml
     </books>
 
 Following is an example:
-    Book.many_from_xml File.open("books_changed.xml").read, [:update]
+    Book.many_from_xml File.open("books_changed.xml"), [:update]
 
 one_from_xml(xml, options)
 Allows for the import of one record based on an XML document. This function expects an XML document similar to the following with many records in it:
@@ -217,7 +217,7 @@ one_book_changed.xml
     </book>
 
 Following is an example:
-    Book.one_from_xml File.open("one_book_changed.xml").read, [:update]
+    Book.one_from_xml File.open("one_book_changed.xml"), [:update]
 
 === Options
 
